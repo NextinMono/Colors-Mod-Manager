@@ -7,7 +7,7 @@
 		<UseWindowsForms>true</UseWindowsForms>
 		<Nullable>enable</Nullable>
 		<EnablePreviewFeatures>True</EnablePreviewFeatures>
-		<StartupObject>Program</StartupObject>
+		<StartupObject>ColorsModManager.Program</StartupObject>
 	</PropertyGroup>
 
 	<ItemGroup>
