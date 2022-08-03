@@ -205,6 +205,8 @@ namespace ColorsModManager
 
                         #endregion
                         #region Copy new file in original place
+                        if (File.Exists(pathOg))
+                            File.Delete(pathOg);
                         File.Copy(fileArray[b], pathOg);
                         #endregion
 
