@@ -97,13 +97,15 @@ namespace ColorsModManager
                 var consoleval = Console.ReadLine();
                 try
                 {
-                    ModChosen = int.Parse(consoleval);
+                    ModChosen = int.Parse(consoleval) - 1;
                     string modname = Path.GetFileNameWithoutExtension(ModsAvailable[ModChosen]);
                     if (!ModsInstalled.Contains(modname))
                         ModsInstalled.Add(modname);
                     else
                         ModsInstalled.Remove(modname);
                     Console.Clear();
+                    CPKSettingsFile.ModsActiveNames = ModsInstalled;
+                    SaveCPKFilesToJson(CPKSettingsFile);
                 }
                 catch
                 {
@@ -130,7 +132,6 @@ namespace ColorsModManager
                             }
                         default:
                             {
-
                                 Console.Clear();
                                 break;
                             }
@@ -341,8 +342,10 @@ namespace ColorsModManager
                 string checkbox = modInstalledBefore ? "[✓]" : "[ ]";
                 if (File.Exists(Path.Combine(list[i], "mod.ini")))
                 {
-                    ConsoleC.WriteColors($"{i}.", ConsoleColor.White, ConsoleColor.Black);
-                    ConsoleC.WriteColors(Path.GetFileNameWithoutExtension(list[i]), ConsoleColor.Gray, ConsoleColor.Black);
+                    ModInfo? m = ModParser.GetModInfo(list[i]);
+                    ConsoleC.WriteColors($"{i + 1}.", ConsoleColor.White, ConsoleColor.Black);
+                    ConsoleC.WriteColors(m.Title, ConsoleColor.Gray, ConsoleColor.Black);
+                    ConsoleC.WriteColors($" by {m.Author} ", ConsoleColor.White, ConsoleColor.Black);
                     ConsoleC.WriteLineColors(checkbox, ConsoleColor.White, ConsoleColor.Black);
                 }
                 else
