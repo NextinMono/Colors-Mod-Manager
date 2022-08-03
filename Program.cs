@@ -62,11 +62,12 @@ namespace ColorsModManager
             //Check if configuration has been completed before
             if (string.IsNullOrEmpty(CPKSettingsFile.ColorsPath) || !File.Exists(Path.Combine(ProgramPath, "cpkfiles.json")))
             {
+                ConsoleC.WriteLineColors("Configuring Colours Mod Manager", ConsoleColor.White, ConsoleColor.Red);
                 //Configure Savefile
-                Console.WriteLine("Paste the path of your extracted Colors installation (the root folder, not files or sys)");
+                ConsoleC.WriteLineColors("Welcome to the Colours Mod Manager! To use the mod manager, please extract your copy of Sonic Colours using wit(wit.wiimm.de), then browse to the extracted folder, and press Select Folder. (the root folder, not files or sys or disc)", ConsoleColor.White, ConsoleColor.Black);
                 FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
                 folderBrowserDialog.UseDescriptionForTitle = true;
-                folderBrowserDialog.Description = "Enter your extracted Sonic Colors installation, and press Enter in the root folder.";
+                folderBrowserDialog.Description = "Browse to your extracted Sonic Colours installation, and press Select Folder in the root folder.";
                 if (folderBrowserDialog.ShowDialog() == DialogResult.OK && !string.IsNullOrWhiteSpace(folderBrowserDialog.SelectedPath))
                 {
                     ColorsExtractedLoc = folderBrowserDialog.SelectedPath;
@@ -162,6 +163,8 @@ namespace ColorsModManager
             string extractedCPK = $"{ProgramPath}\\sonic2010_0";
             if (CPKSettingsFile.Files.Length == 0)
                 SaveFileList(Directory.GetFiles(path: Path.Combine(ProgramPath, "sonic2010_0"), searchPattern: "*.*", searchOption: SearchOption.AllDirectories));
+            
+            //TODO: implement actually checking if mods change and remove those that are unchecked
 
             //Go through all mods and install their content
             for (int a = 0; a < ModsInstalled.Count; a++)
@@ -262,6 +265,8 @@ namespace ColorsModManager
                     //Directory.Move(fileArray[i], files);
                 }
             }
+            CPKSettingsFile.ModsActiveNames.Clear();
+            SaveCPKFilesToJson(CPKSettingsFile);
             RepackCPK();
 
         }
@@ -345,10 +350,10 @@ namespace ColorsModManager
                 if (File.Exists(Path.Combine(list[i], "mod.ini")))
                 {
                     ModInfo? m = ModParser.GetModInfo(list[i]);
+                    ConsoleC.WriteColors(checkbox, ConsoleColor.White, ConsoleColor.Black);
                     ConsoleC.WriteColors($"{i + 1}.", ConsoleColor.White, ConsoleColor.Black);
                     ConsoleC.WriteColors(m.Title, ConsoleColor.Gray, ConsoleColor.Black);
-                    ConsoleC.WriteColors($" by {m.Author} ", ConsoleColor.White, ConsoleColor.Black);
-                    ConsoleC.WriteLineColors(checkbox, ConsoleColor.White, ConsoleColor.Black);
+                    ConsoleC.WriteLineColors($" by {m.Author} ", ConsoleColor.White, ConsoleColor.Black);
                 }
                 else
                 {

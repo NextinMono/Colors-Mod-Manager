@@ -15,7 +15,7 @@ namespace ColorsModManager
             var parser = new FileIniDataParser();
             IniData data = parser.ReadFile(Path.Combine(folderPath, "mod.ini"));
             ModInfo mod = new ModInfo();
-
+            
             mod.Title = data["Main"]["Title"];
             mod.Author = data["Main"]["Author"];
             mod.Version = data["Main"]["Version"];
@@ -23,11 +23,21 @@ namespace ColorsModManager
             mod.Date = data["Main"]["Date"];
             mod.AuthorURL = data["Main"]["AuthorURL"];
             if (mod.Title == null)
+            {
                 mod.Title = Path.GetFileNameWithoutExtension(folderPath);
+                data["Main"]["Title"] = mod.Title;
+            }
             if (mod.Author  == null)
+            {
                 mod.Author = "Unknown";
+                data["Main"]["Author"] = mod.Author;
+            }
             if (mod.Version == null)
+            {
                 mod.Version = "0.0";
+                data["Main"]["Version"] = mod.Version;
+            }
+            parser.WriteFile(Path.Combine(folderPath, "mod.ini"), data);
 
             return mod;
         }
