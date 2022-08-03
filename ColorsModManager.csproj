@@ -22,9 +22,6 @@
 	  <None Update="cpkredir.ini">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
-	  <None Update="CPY.ini">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
 	  <None Update="PackCpk.exe">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
