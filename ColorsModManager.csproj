@@ -19,9 +19,6 @@
 	  <None Update="CpkMaker.dll">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
-	  <None Update="cpkredir.ini">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
 	  <None Update="PackCpk.exe">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>

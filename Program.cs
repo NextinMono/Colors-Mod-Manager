@@ -44,7 +44,7 @@ namespace ColorsModManager
         public static string ColorsExtractedLoc;
         public static int ModChosen;
         public static CPKSettings CPKSettingsFile;
-       
+
         [STAThread]
         static void Main(string[] args)
         {
@@ -63,16 +63,24 @@ namespace ColorsModManager
             if (string.IsNullOrEmpty(CPKSettingsFile.ColorsPath) || !File.Exists(Path.Combine(ProgramPath, "cpkfiles.json")))
             {
                 ConsoleC.WriteLineColors("Configuring Colours Mod Manager", ConsoleColor.White, ConsoleColor.Red);
-                //Configure Savefile
+                //Configure CPKPath
                 ConsoleC.WriteLineColors("Welcome to the Colours Mod Manager! To use the mod manager, please extract your copy of Sonic Colours using wit(wit.wiimm.de), then browse to the extracted folder, and press Select Folder. (the root folder, not files or sys or disc)", ConsoleColor.White, ConsoleColor.Black);
                 FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
                 folderBrowserDialog.UseDescriptionForTitle = true;
-                folderBrowserDialog.Description = "Browse to your extracted Sonic Colours installation, and press Select Folder in the root folder.";
+                folderBrowserDialog.Description = "Navigate to your extracted Sonic Colours installation, and press Select Folder in the root folder.";
                 if (folderBrowserDialog.ShowDialog() == DialogResult.OK && !string.IsNullOrWhiteSpace(folderBrowserDialog.SelectedPath))
                 {
                     ColorsExtractedLoc = folderBrowserDialog.SelectedPath;
 
-                    CPKSettingsFile = new CPKSettings(CPKPath, ColorsExtractedLoc, new string[0], ModsInstalled);
+                    CPKSettingsFile = new CPKSettings(CPKPath, ColorsExtractedLoc, new string[0], ModsInstalled, null);
+                }
+
+                //Configure Dolphin path
+                ConsoleC.WriteLineColors("Now, navigate to Dolphin's Load directory and press Select Folder.", ConsoleColor.White, ConsoleColor.Black);
+                folderBrowserDialog.Description = "Navigate to Dolphin's Load directory and press Select Folder";
+                if (folderBrowserDialog.ShowDialog() == DialogResult.OK && !string.IsNullOrWhiteSpace(folderBrowserDialog.SelectedPath))
+                {
+                    CPKSettingsFile = new CPKSettings(CPKPath, ColorsExtractedLoc, new string[0], ModsInstalled, folderBrowserDialog.SelectedPath);
                     SaveCPKFilesToJson(CPKSettingsFile);
                 }
             }
@@ -149,7 +157,7 @@ namespace ColorsModManager
             List<string> filesList = new List<string>();
             for (int i = 0; i < files.Length; i++)
             {
-                filesList.Add(files[i].Replace(Path.Combine(ProgramPath, "sonic2010_0") + "\\", ""));                
+                filesList.Add(files[i].Replace(Path.Combine(ProgramPath, "sonic2010_0") + "\\", ""));
             }
             CPKSettingsFile.Files = filesList.ToArray();
 
@@ -159,31 +167,60 @@ namespace ColorsModManager
         /// </summary>
         private static void Install()
         {
-            ExtractCPK();
-            string extractedCPK = $"{ProgramPath}\\sonic2010_0";
-            if (CPKSettingsFile.Files.Length == 0)
-                SaveFileList(Directory.GetFiles(path: Path.Combine(ProgramPath, "sonic2010_0"), searchPattern: "*.*", searchOption: SearchOption.AllDirectories));
-            
             //TODO: implement actually checking if mods change and remove those that are unchecked
+            bool haveToExtract = false, alreadyExtracted = false;
+            string extractedCPK = $"{ProgramPath}\\sonic2010_0";
 
             //Go through all mods and install their content
             for (int a = 0; a < ModsInstalled.Count; a++)
             {
-                string modPath = Path.Combine(ProgramPath, "mods", ModsInstalled[a], "sonic2010_0");
-                if (!Directory.Exists(modPath))
+
+                var modConfig = ModParser.GetModInfo(Path.Combine(ProgramPath, "mods", ModsInstalled[a]));
+                bool dolphin = modConfig.DolphinMod;
+                bool hasLoad = false;
+                string modPathCPK = Path.Combine(ProgramPath, "mods", ModsInstalled[a], "sonic2010_0");
+                string modPathLoad = Path.Combine(ProgramPath, "mods", ModsInstalled[a], "Load");
+
+                if (!dolphin)
+                {
+                    haveToExtract = true;
+                    if (Directory.Exists(modPathLoad))
+                        hasLoad = true;
+                }
+                else
+                {
+                    hasLoad = true;
+                    //Disable CPK loading.
+                    modPathCPK = "";
+                }
+
+                
+
+                if (!Directory.Exists(modPathCPK) && !Directory.Exists(modPathLoad))
                 {
                     ConsoleC.WriteLineColors($"Mod {ModsInstalled[a]} doesn't have any files to replace, skipping...", ConsoleColor.Black, ConsoleColor.White);
                     if (a == ModsInstalled.Count - 1)
                         return;
                     else
                         continue;
-
                 }
-                string[] fileArray = Directory.GetFiles(path: modPath, searchPattern: "*.*", searchOption: SearchOption.AllDirectories);
-
-                for (int b = 0; b < fileArray.Length; b++)
+                ConsoleC.WriteLineColors($"Installing {ModsInstalled[a]}...", ConsoleColor.DarkGray, ConsoleColor.Black);
+                //Only extract CPK if a mod requires it, otherwise don't
+                if (haveToExtract && !alreadyExtracted)
                 {
-                    var actualPath = fileArray[b].Replace($"{Path.Combine(ProgramPath, "mods", ModsInstalled[a])}\\sonic2010_0\\", "");
+                    alreadyExtracted = true;
+                    ExtractCPK();
+                    if (CPKSettingsFile.Files.Length == 0)
+                        SaveFileList(Directory.GetFiles(path: Path.Combine(ProgramPath, "sonic2010_0"), searchPattern: "*.*", searchOption: SearchOption.AllDirectories));
+                }
+                string[] fileArrayLoad = hasLoad ? Directory.GetFiles(path: modPathLoad, searchPattern: "*.*", searchOption: SearchOption.AllDirectories) : new string[0];
+                string[] fileArrayCPK = !dolphin ? Directory.GetFiles(path: modPathCPK, searchPattern: "*.*", searchOption: SearchOption.AllDirectories) : new string[0];
+               
+                //Go through all of the mods' files  and copy the original to cache if they werent cached and move the new files in
+                //(CPK)
+                for (int b = 0; b < fileArrayCPK.Length; b++)
+                {                    
+                    string actualPath = fileArrayCPK[b].Replace($"{Path.Combine(ProgramPath, "mods", ModsInstalled[a])}\\sonic2010_0\\", "");
                     actualPath = actualPath.Replace(@"\\sonic2010_0\\", "");
                     //If it is actually real, copy the old one to a cache and move the new one in its place
                     if (CPKSettingsFile.Files.Contains(actualPath))
@@ -198,29 +235,46 @@ namespace ColorsModManager
                             Directory.CreateDirectory(cachePath);
 
                         if (!File.Exists(newPath))
-                        {
-                            Console.WriteLine($"PathOg: {pathOg}\nPathNew: {newPath}");
-                            Console.WriteLine($"Moving file {actualPath}");
+                        {                           
                             File.Move(@pathOg, @newPath);
                         }
                         else
-                            Console.WriteLine($"File {actualPath} already cached");
+                            ConsoleC.WriteLineColors($"File {actualPath} already cached", ConsoleColor.DarkGray, ConsoleColor.Black);
 
                         #endregion
                         #region Copy new file in original place
                         if (File.Exists(pathOg))
                             File.Delete(pathOg);
-                        File.Copy(fileArray[b], pathOg);
+                        File.Copy(fileArrayCPK[b], pathOg);
                         #endregion
+
 
                     }
                 }
+                //(Load)
+                for (int c = 0; c < fileArrayLoad.Length; c++)
+                {
+                    string folderName = "SNC";
+                    string relativeP = fileArrayLoad[c].Replace($"{Path.Combine(ProgramPath, "mods", ModsInstalled[a])}\\Load\\", "");
+                    string newPath = Path.Combine(CPKSettingsFile.DolphinLoadPath, folderName, ModsInstalled[a], relativeP);
+                    string newPathParent = Directory.GetParent(newPath).FullName;
 
+                    //If dolphin path for the textures doesnt exist ("Load\Textures\SNC\(modname)") then make it
+                    if (!Directory.Exists(Path.Combine(CPKSettingsFile.DolphinLoadPath, folderName, ModsInstalled[a])))
+                        Directory.CreateDirectory(Path.Combine(CPKSettingsFile.DolphinLoadPath, folderName, ModsInstalled[a]));
+
+                    //If parent path of texture doesn't exist, make it. Ideally File.Copy would just create it but it doesn't
+                    if (!Directory.Exists(newPathParent))
+                        Directory.CreateDirectory(newPathParent);
+
+                   
+                    File.Copy(fileArrayLoad[c], newPath, true);
+                }
             }
 
             //Check if CPK configuration actually has the file in the file list (a.k.a check if its stock)
-
-            RepackCPK();
+            if (alreadyExtracted)
+                RepackCPK();
             Console.WriteLine("Check if it worked!");
         }
         /// <summary>
@@ -228,7 +282,9 @@ namespace ColorsModManager
         /// </summary>
         private static void Uninstall()
         {
-            if(CPKSettingsFile.ModsActiveNames.Count == 0)
+            bool alreadyExtracted = false;
+
+            if (CPKSettingsFile.ModsActiveNames.Count == 0)
             {
                 ConsoleC.WriteLineColors("No mods have been installed!", ConsoleColor.White, ConsoleColor.DarkGreen);
                 Console.WriteLine("Press any key to go back to the main menu.");
@@ -237,13 +293,22 @@ namespace ColorsModManager
                 MainMenu();
                 return;
             }
-            ExtractCPK();
-            string cache = Path.Combine($"{ProgramPath}\\sonic2010_0", "cache-do-not-delete");
-            string[] cacheArray = Directory.GetFiles(path: cache, searchPattern: "*.*", searchOption: SearchOption.AllDirectories);
 
-            string[] fileArray = Directory.GetFiles(path: Path.Combine(ProgramPath, "sonic2010_0"), searchPattern: "*.*", searchOption: SearchOption.AllDirectories);
+            string cache = Path.Combine($"{ProgramPath}\\sonic2010_0", "cache-do-not-delete");
+            string load = Path.Combine(CPKSettingsFile.DolphinLoadPath, "SNC");
+            string[] cacheArray = Directory.GetFiles(path: cache, searchPattern: "*.*", searchOption: SearchOption.AllDirectories);
+            string[] loadArray = Directory.GetDirectories(path: load, searchPattern: "*.*", searchOption: SearchOption.TopDirectoryOnly);
+
+            string[] fileArrayCPK = Directory.GetFiles(path: Path.Combine(ProgramPath, "sonic2010_0"), searchPattern: "*.*", searchOption: SearchOption.AllDirectories);
             if (CPKSettingsFile.Files.Length == 0)
-            { SaveFileList(fileArray); }
+            { SaveFileList(fileArrayCPK); }
+
+            if(cacheArray.Length != 0)
+            {
+                ExtractCPK();
+                alreadyExtracted = true;
+            }  
+            
             for (int i = 0; i < cacheArray.Length; i++)
             {
                 var cacheFilePath = cacheArray[i].Replace($"{cache}\\", "");
@@ -257,16 +322,25 @@ namespace ColorsModManager
                     if (File.Exists(newPath))
                     { File.Delete(newPath); }
 
-                    Console.WriteLine($"PathOg: {pathOg}\nPathNew: {newPath}");
-                    Console.WriteLine($"Moving file {cacheFilePath}");
+                    ConsoleC.WriteLineColors($"Uninstalling file {cacheArray[i]}...",ConsoleColor.DarkGray, ConsoleColor.Black);
+
                     File.Move(@pathOg, @newPath);
                     File.Delete(pathOg);
                     #endregion
-                    //Directory.Move(fileArray[i], files);
                 }
+            }
+            for (int i = 0; i < loadArray.Length; i++)
+            {
+                ConsoleC.WriteLineColors($"Removing texture {loadArray[i]}...", ConsoleColor.DarkGray, ConsoleColor.Black);
+                if (loadArray[i].Replace(load, "") != "User")
+                {
+                    Directory.Delete(loadArray[i], true);
+                }
+
             }
             CPKSettingsFile.ModsActiveNames.Clear();
             SaveCPKFilesToJson(CPKSettingsFile);
+            if(alreadyExtracted)
             RepackCPK();
 
         }
@@ -310,12 +384,12 @@ namespace ColorsModManager
             }
             catch
             {
-                return new CPKSettings("", "", new string[0], new List<string>());
+                return new CPKSettings("", "", new string[0], new List<string>(), "");
             }
 
         }
         private static void SaveCPKFilesToJson(CPKSettings saveobj)
-        {            
+        {
             using (FileStream fileStream = File.Create(Path.Combine(ProgramPath, "cpkfiles.json")))
             {
                 string jsonSerialized = JsonConvert.SerializeObject(saveobj, Formatting.Indented);
@@ -335,7 +409,7 @@ namespace ColorsModManager
             {
                 Directory.CreateDirectory(ModsPath);
             }
-            if(ModsInstalled == null) ModsInstalled = new List<string>();
+            if (ModsInstalled == null) ModsInstalled = new List<string>();
             string[]? list = Directory.GetDirectories(ModsPath);
             Separator();
             Console.WriteLine("\nList:");
@@ -382,14 +456,16 @@ public class CPKSettings
 {
     public string ColorsPath { get; set; }
     public string CPKPath { get; set; }
+    public string DolphinLoadPath { get; set; }
     public List<string> ModsActiveNames { get; set; } = new List<string>();
     public string[] Files { get; set; }
 
-    public CPKSettings(string path, string colorsPath, string[] files, List<string> modsactive)
+    public CPKSettings(string path, string colorsPath, string[] files, List<string> modsactive, string dolphinLoadPath)
     {
         CPKPath = path;
         ColorsPath = colorsPath;
         Files = files;
         ModsActiveNames = modsactive;
+        DolphinLoadPath = dolphinLoadPath;
     }
 }

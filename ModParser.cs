@@ -22,6 +22,9 @@ namespace ColorsModManager
             mod.Description = data["Main"]["Description"];
             mod.Date = data["Main"]["Date"];
             mod.AuthorURL = data["Main"]["AuthorURL"];
+            var e = data["Main"]["IsDolphinMod"];
+            if(e != null)
+            mod.DolphinMod = bool.Parse(e);
             if (mod.Title == null)
             {
                 mod.Title = Path.GetFileNameWithoutExtension(folderPath);
@@ -37,6 +40,11 @@ namespace ColorsModManager
                 mod.Version = "0.0";
                 data["Main"]["Version"] = mod.Version;
             }
+            if(e == null)
+            {
+                mod.DolphinMod = false;
+                data["Main"]["IsDolphinMod"] = mod.DolphinMod.ToString();
+            }
             parser.WriteFile(Path.Combine(folderPath, "mod.ini"), data);
 
             return mod;
@@ -50,5 +58,6 @@ namespace ColorsModManager
         public string Description { get; set; }
         public string Date { get; set; }
         public string AuthorURL { get; set; }
+        public bool DolphinMod { get; set; }
     }
 }
