@@ -77,7 +77,7 @@ namespace ColorsModManager
 
                 //Configure Dolphin path
                 ConsoleC.WriteLineColors("Now, navigate to Dolphin's Load directory and press Select Folder.", ConsoleColor.White, ConsoleColor.Black);
-                folderBrowserDialog.Description = "Navigate to Dolphin's Load directory and press Select Folder";
+                folderBrowserDialog.Description = "Navigate to Dolphin's Load\\Textures directory and press Select Folder (usually this is in Documents)";
                 if (folderBrowserDialog.ShowDialog() == DialogResult.OK && !string.IsNullOrWhiteSpace(folderBrowserDialog.SelectedPath))
                 {
                     CPKSettingsFile = new CPKSettings(CPKPath, ColorsExtractedLoc, new string[0], ModsInstalled, folderBrowserDialog.SelectedPath);

@@ -15,36 +15,23 @@ namespace ColorsModManager
             var parser = new FileIniDataParser();
             IniData data = parser.ReadFile(Path.Combine(folderPath, "mod.ini"));
             ModInfo mod = new ModInfo();
-            
+            //Set defaults if they're missing
+            data["Main"]["Title"] ??= Path.GetFileNameWithoutExtension(folderPath);
+            data["Main"]["Author"] ??= "Unknown";
+            data["Main"]["Version"] ??= "0.0";
+            data["Main"]["Description"] ??= "";
+            data["Main"]["Date"] ??= "";
+            data["Main"]["AuthorURL"] ??= "";
+            data["Main"]["IsDolphinMod"] ??= false.ToString();
+
+
             mod.Title = data["Main"]["Title"];
             mod.Author = data["Main"]["Author"];
             mod.Version = data["Main"]["Version"];
             mod.Description = data["Main"]["Description"];
             mod.Date = data["Main"]["Date"];
             mod.AuthorURL = data["Main"]["AuthorURL"];
-            var e = data["Main"]["IsDolphinMod"];
-            if(e != null)
-            mod.DolphinMod = bool.Parse(e);
-            if (mod.Title == null)
-            {
-                mod.Title = Path.GetFileNameWithoutExtension(folderPath);
-                data["Main"]["Title"] = mod.Title;
-            }
-            if (mod.Author  == null)
-            {
-                mod.Author = "Unknown";
-                data["Main"]["Author"] = mod.Author;
-            }
-            if (mod.Version == null)
-            {
-                mod.Version = "0.0";
-                data["Main"]["Version"] = mod.Version;
-            }
-            if(e == null)
-            {
-                mod.DolphinMod = false;
-                data["Main"]["IsDolphinMod"] = mod.DolphinMod.ToString();
-            }
+            mod.DolphinMod = bool.Parse(data["Main"]["IsDolphinMod"]);
             parser.WriteFile(Path.Combine(folderPath, "mod.ini"), data);
 
             return mod;
